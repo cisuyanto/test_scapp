@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-Time Community Forum - Codespaces</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #f4f6f9; margin: 0; padding: 20px; }
+        .container { max-width: 600px; margin: 0 auto; }
+        h2 { text-align: center; color: #1e293b; }
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        input, textarea { width: 100%; padding: 10px; margin-top: 8px; margin-bottom: 12px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; }
+        button { background-color: #0066ff; color: white; border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; }
+        button:hover { background-color: #0052cc; }
+        .post-card { background: white; padding: 16px; border-radius: 10px; margin-bottom: 16px; border: 1px solid #e2e8f0; }
+        .post-header { display: flex; justify-content: space-between; font-size: 0.85em; color: #64748b; margin-bottom: 8px; }
+        .post-author { font-weight: bold; color: #0f172a; }
+        .post-text { font-size: 1em; color: #334155; margin-bottom: 12px; white-space: pre-line; }
+        .comments-section { background: #f8fafc; padding: 10px; border-radius: 8px; margin-top: 10px; }
+        .comment-item { font-size: 0.9em; padding: 6px 0; border-bottom: 1px solid #e2e8f0; }
+        .comment-item:last-child { border-bottom: none; }
+        .comment-author { font-weight: bold; color: #1e293b; }
+        .comment-time { font-size: 0.8em; color: #94a3b8; float: right; }
+        .comment-input-group { display: flex; gap: 8px; margin-top: 8px; }
+        .comment-input-group input { margin: 0; flex: 1; }
+        .comment-input-group button { width: auto; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Syber Community Forum</h2>
+
+    <div class="card">
+        <label><b>Your Display Name:</b></label>
+        <input type="text" id="username" value="Executive_User">
+
+        <label><b>Create a New Post:</b></label>
+        <textarea id="postText" rows="3" placeholder="Share threat intelligence or updates..."></textarea>
+        <button onclick="submitPost()">Publish Post</button>
+    </div>
+
+    <div id="feedContainer"></div>
+</div>
+
+<script>
+    // Automatically uses HTTPS/WSS protocol and GitHub tunnel host dynamically
+    const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    const socket = new WebSocket(`${wsProtocol}//${window.location.host}/ws`);
+
+    socket.onmessage = function(event) {
+        const data = JSON.parse(event.data);
+        if (data.type === "INIT_DATA" || data.type === "UPDATE_POSTS") {
+            renderFeed(data.posts);
+        }
+    };
+
+    function submitPost() {
+        const username = document.getElementById("username").value.trim() || "Anonymous";
+        const text = document.getElementById("postText").value.trim();
+        if (!text) return alert("Please enter text before posting.");
+
+        socket.send(JSON.stringify({ type: "NEW_POST", username: username, text: text }));
+        document.getElementById("postText").value = "";
+    }
+
+    function submitComment(postId) {
+        const username = document.getElementById("username").value.trim() || "Anonymous";
+        const commentInput = document.getElementById(`comment-input-${postId}`);
+        const text = commentInput.value.trim();
+        if (!text) return alert("Comment cannot be empty.");
+
+        socket.send(JSON.stringify({ type: "NEW_COMMENT", post_id: postId, username: username, text: text }));
+        commentInput.value = "";
+    }
+
+    function renderFeed(posts) {
+        const container = document.getElementById("feedContainer");
+        container.innerHTML = "";
+
+        if (posts.length === 0) {
+            container.innerHTML = "<p style='text-align:center; color:#94a3b8;'>No posts yet.</p>";
+            return;
+        }
+
+        posts.forEach(post => {
+            let commentsHTML = "";
+            post.comments.forEach(c => {
+                commentsHTML += `
+                    <div class="comment-item">
+                        <span class="comment-author">${c.username}:</span> ${c.text}
+                        <span class="comment-time">${c.timestamp}</span>
+                    </div>
+                `;
+            });
+
+            container.innerHTML += `
+                <div class="post-card">
+                    <div class="post-header">
+                        <span class="post-author">${post.username}</span>
+                        <span>${post.timestamp}</span>
+                    </div>
+                    <div class="post-text">${post.text}</div>
+                    <div class="comments-section">
+                        <b>Comments (${post.comments.length}):</b>
+                        <div>${commentsHTML || "<p style='font-size:0.85em; color:#94a3b8; margin:4px 0;'>No comments yet.</p>"}</div>
+                        <div class="comment-input-group">
+                            <input type="text" id="comment-input-${post.id}" placeholder="Write a response...">
+                            <button onclick="submitComment(${post.id})">Reply</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+    }
+</script>
+
+</body>
+</html>
