@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Real-Time Community Forum - Codespaces</title>
+    <title>Syber Community Forum</title>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #f4f6f9; margin: 0; padding: 20px; }
         .container { max-width: 600px; margin: 0 auto; }
@@ -16,6 +16,13 @@
         .post-header { display: flex; justify-content: space-between; font-size: 0.85em; color: #64748b; margin-bottom: 8px; }
         .post-author { font-weight: bold; color: #0f172a; }
         .post-text { font-size: 1em; color: #334155; margin-bottom: 12px; white-space: pre-line; }
+        
+        /* Action bar for sharing */
+        .post-actions { display: flex; gap: 10px; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid #e2e8f0; }
+        .share-btn { background-color: #0a66c2; color: white; font-size: 0.85em; padding: 6px 12px; width: auto; border-radius: 4px; display: inline-flex; align-items: center; gap: 5px; text-decoration: none; }
+        .share-btn.copy { background-color: #475569; }
+        .share-btn:hover { opacity: 0.9; }
+
         .comments-section { background: #f8fafc; padding: 10px; border-radius: 8px; margin-top: 10px; }
         .comment-item { font-size: 0.9em; padding: 6px 0; border-bottom: 1px solid #e2e8f0; }
         .comment-item:last-child { border-bottom: none; }
@@ -29,14 +36,14 @@
 <body>
 
 <div class="container">
-    <h2>Syber Community Forum</h2>
+    <h2>Syber Executive Community Forum</h2>
 
     <div class="card">
-        <label><b>Your Display Name:</b></label>
+        <label><b>Display Name:</b></label>
         <input type="text" id="username" value="Executive_User">
 
-        <label><b>Create a New Post:</b></label>
-        <textarea id="postText" rows="3" placeholder="Share threat intelligence or updates..."></textarea>
+        <label><b>New Post / Threat Advisory:</b></label>
+        <textarea id="postText" rows="3" placeholder="Share updates or security insights..."></textarea>
         <button onclick="submitPost()">Publish Post</button>
     </div>
 
@@ -44,7 +51,6 @@
 </div>
 
 <script>
-    // Automatically uses HTTPS/WSS protocol and GitHub tunnel host dynamically
     const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     const socket = new WebSocket(`${wsProtocol}//${window.location.host}/ws`);
 
@@ -74,6 +80,21 @@
         commentInput.value = "";
     }
 
+    function shareToLinkedIn(postText) {
+        const currentUrl = window.location.href.split('#')[0];
+        // Truncate text snippet for the LinkedIn share share intent
+        const summary = encodeURIComponent(`"${postText.substring(0, 100)}..." shared via Syber Couture Security Forum.`);
+        const shareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(currentUrl)}`;
+        window.open(shareUrl, '_blank', 'width=600,height=600');
+    }
+
+    function copyPostLink(postId) {
+        const currentUrl = window.location.href.split('#')[0];
+        navigator.clipboard.writeText(`${currentUrl}#post-${postId}`).then(() => {
+            alert("Post link copied to clipboard!");
+        });
+    }
+
     function renderFeed(posts) {
         const container = document.getElementById("feedContainer");
         container.innerHTML = "";
@@ -95,12 +116,22 @@
             });
 
             container.innerHTML += `
-                <div class="post-card">
+                <div class="post-card" id="post-${post.id}">
                     <div class="post-header">
                         <span class="post-author">${post.username}</span>
                         <span>${post.timestamp}</span>
                     </div>
                     <div class="post-text">${post.text}</div>
+                    
+                    <div class="post-actions">
+                        <button class="share-btn" onclick="shareToLinkedIn('${post.text.replace(/'/g, "\\'")}')">
+                            💼 Share to LinkedIn
+                        </button>
+                        <button class="share-btn copy" onclick="copyPostLink(${post.id})">
+                            🔗 Copy Link
+                        </button>
+                    </div>
+
                     <div class="comments-section">
                         <b>Comments (${post.comments.length}):</b>
                         <div>${commentsHTML || "<p style='font-size:0.85em; color:#94a3b8; margin:4px 0;'>No comments yet.</p>"}</div>
