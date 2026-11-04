@@ -30,6 +30,34 @@ async def get_homepage():
     with open("index.html", "r", encoding="utf-8") as f:
         return HTMLResponse(content=f.read())
 
+@app.get("/post/{post_id}", response_class=HTMLResponse)
+async def get_single_post(post_id: int):
+    # Find the requested post block in your database/memory
+    post = next((p for p in posts_db if p["id"] == post_id), None)
+    if not post:
+        return HTMLResponse("Post not found", status_code=404)
+    
+    # Render HTML injected with block-specific Open Graph tags for LinkedIn
+    html_content = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>{post['username']}'s Post - Syber Community</title>
+        <meta property="og:title" content="Post by {post['username']} | Syber Forum" />
+        <meta property="og:description" content="{post['text'][:150]}..." />
+        <meta property="og:url" content="https://syber-community.onrender.com/post/{post_id}" />
+    </head>
+    <body>
+        <div class="post-card">
+            <h3>{post['username']}</h3>
+            <p>{post['text']}</p>
+        </div>
+        <a href="/">View Full Forum</a>
+    </body>
+    </html>
+    """
+    return HTMLResponse(content=html_content)
+
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     await manager.connect(websocket)
