@@ -99,11 +99,14 @@
     function shareToLinkedIn(event, postId) {
         event.stopPropagation();
         const cleanUrl = window.location.href.split('#')[0];
-        
-        // Target the specific post's independent page URL
         const singlePostUrl = `${cleanUrl}post/${postId}`;
         
-        const shareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(singlePostUrl)}`;
+        // Define your accompanying text
+        const customText = "Sharing a recent cybersecurity discussion on the Syber Community platform. Read the full post here:";
+        
+        // Combine the text and the URL using LinkedIn's share parameters
+        const shareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(singlePostUrl)}&summary=${encodeURIComponent(customText)}`;
+        
         window.open(shareUrl, '_blank', 'width=600,height=600');
     }
 
