@@ -36,7 +36,17 @@ async def get_single_post(post_id: int):
     if not post:
         return HTMLResponse("Post not found", status_code=404)
     
-    # Dedicated single-post page with Open Graph metadata for social sharing
+    comments_html = ""
+    for c in post['comments']:
+        comments_html += f'''
+            <div class="comment-item">
+                <span class="comment-author">{c["username"]}:</span> {c["text"]}
+                <span class="comment-time">{c["timestamp"]}</span>
+            </div>
+        '''
+    if not comments_html:
+        comments_html = '<p style="font-size:0.85em; color:#94a3b8; margin:4px 0;">No comments yet.</p>'
+
     html_content = f"""
     <!DOCTYPE html>
     <html lang="en">
@@ -78,7 +88,7 @@ async def get_single_post(post_id: int):
                 <div class="comments-section">
                     <b>Discussion ({len(post['comments'])}):</b>
                     <div id="commentsList">
-                        {"".join([f'<div class="comment-item"><span class="comment-author">{c["username"]}:</span> {c["text"]}<span class="comment-time">{c["timestamp"]}</span></div>' for c in post['comments']]) or '<p style="font-size:0.85em; color:#94a3b8; margin:4px 0;">No comments yet.</p>'}
+                        {comments_html}
                     </div>
                     <div style="margin-top: 12px;">
                         <input type="text" id="commentUser" placeholder="Your Name" value="Executive_User">
@@ -96,14 +106,14 @@ async def get_single_post(post_id: int):
                 const username = document.getElementById("commentUser").value.trim() || "Anonymous";
                 const text = document.getElementById("commentText").value.trim();
                 if (!text) return alert("Comment cannot be empty.");
-                socket.send(JSON.stringify({ type: "NEW_COMMENT", post_id: postId, username: username, text: text }));
+                socket.send(JSON.stringify({{ type: "NEW_COMMENT", post_id: postId, username: username, text: text }}));
                 document.getElementById("commentText").value = "";
             }
 
             socket.onmessage = function(event) {
                 const data = JSON.parse(event.data);
                 if (data.type === "UPDATE_POSTS") {
-                    const updatedPost = data.posts.find(p => p.id === postId);
+                    const updatedPost = data.posts.find(p => p.id === {post['id']});
                     if (updatedPost) {
                         const list = document.getElementById("commentsList");
                         if (updatedPost.comments.length === 0) {
@@ -111,8 +121,8 @@ async def get_single_post(post_id: int):
                         } else {
                             list.innerHTML = updatedPost.comments.map(c => `
                                 <div class="comment-item">
-                                    <span class="comment-author">${c.username}:</span> ${c.text}
-                                    <span class="comment-time">${c.timestamp}</span>
+                                    <span class="comment-author">${{c.username}}:</span> ${{c.text}}
+                                    <span class="comment-time">${{c.timestamp}}</span>
                                 </div>
                             `).join('');
                         }
