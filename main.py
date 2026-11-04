@@ -1,7 +1,7 @@
 import datetime
 from typing import List, Dict
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 
 app = FastAPI()
 
@@ -34,10 +34,18 @@ async def get_homepage():
 async def get_single_post(post_id: int):
     post = next((p for p in posts_db if p["id"] == post_id), None)
     if not post:
-        return HTMLResponse("Post not found", status_code=404)
+        return RedirectResponse(url="/", status_code=303)
     
     with open("post_detail.html", "r", encoding="utf-8") as f:
         html_content = f.read()
+    
+    # Dynamically inject post-specific Open Graph tags so LinkedIn displays the content preview card
+    post_url = f"https://syber-community.onrender.com/post/{post_id}"
+    safe_text = post['text'].replace('"', '&quot;')[:160] # Truncate for clean preview
+    
+    html_content = html_content.replace("<!--OG_TITLE_PLACEHOLDER-->", f"Post by {post['username']} | Syber Community")
+    html_content = html_content.replace("<!--OG_DESC_PLACEHOLDER-->", safe_text)
+    html_content = html_content.replace("<!--OG_URL_PLACEHOLDER-->", post_url)
     
     return HTMLResponse(content=html_content)
 
