@@ -80,11 +80,12 @@
         commentInput.value = "";
     }
 
-    function shareToLinkedIn(postText) {
-        const currentUrl = window.location.href.split('#')[0];
-        // Truncate text snippet for the LinkedIn share share intent
-        const summary = encodeURIComponent(`"${postText.substring(0, 100)}..." shared via Syber Couture Security Forum.`);
-        const shareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(currentUrl)}`;
+    function shareToLinkedIn(postId) {
+        // Generate the unique single-block URL
+        const singlePostUrl = `${window.location.origin}/post/${postId}`;
+        const shareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(singlePostUrl)}`;
+        
+        // Open LinkedIn share dialog
         window.open(shareUrl, '_blank', 'width=600,height=600');
     }
 
