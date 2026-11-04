@@ -12,8 +12,14 @@
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #f4f6f9; margin: 0; padding: 20px; }
         .container { max-width: 600px; margin: 0 auto; }
-        .back-link { display: inline-block; margin-bottom: 15px; color: #0066ff; text-decoration: none; font-weight: bold; font-size: 0.9em; }
+        .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .back-link { color: #0066ff; text-decoration: none; font-weight: bold; font-size: 0.9em; }
         .back-link:hover { text-decoration: underline; }
+
+        .profile-widget { display: flex; align-items: center; gap: 8px; background: white; padding: 4px 10px; border-radius: 20px; border: 1px solid #cbd5e1; cursor: pointer; }
+        .profile-avatar { width: 24px; height: 24px; border-radius: 50%; background: #e2e8f0; object-fit: cover; }
+        .profile-name { font-weight: bold; font-size: 0.8em; color: #334155; }
+
         .post-card { background: white; padding: 20px; border-radius: 10px; margin-bottom: 16px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
         .post-header { display: flex; justify-content: space-between; font-size: 0.85em; color: #64748b; margin-bottom: 8px; }
         .post-author { font-weight: bold; color: #0f172a; }
@@ -22,21 +28,45 @@
         .comment-item { font-size: 0.9em; padding: 8px 0; border-bottom: 1px solid #e2e8f0; }
         .comment-item:last-child { border-bottom: none; }
         .comment-author { font-weight: bold; color: #1e293b; }
-        .comment-time { font-size: 0.8em; color: #94a3b8; float: right; }
-        input, button { width: 100%; padding: 10px; margin-top: 8px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; }
+        .comment-time { font-size: 0.75em; color: #94a3b8; float: right; }
+        textarea, button { width: 100%; padding: 10px; margin-top: 8px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; }
         button { background-color: #0066ff; color: white; border: none; font-weight: bold; cursor: pointer; }
         button:hover { background-color: #0052cc; }
     </style>
 </head>
 <body>
     <div class="container">
-        <a class="back-link" href="/">← Back to Main Feed</a>
+        <div class="top-bar">
+            <a class="back-link" href="/">← Back to Main Feed</a>
+            <div class="profile-widget" onclick="changeDisplayName()" title="Click to change your account display name">
+                <img id="profileAvatar" class="profile-avatar" src="" alt="Avatar">
+                <span id="displayUsername" class="profile-name">Executive_User</span>
+            </div>
+        </div>
+
         <div class="post-card" id="postCardContainer">
             <p style="text-align:center; color:#94a3b8;">Loading post...</p>
         </div>
     </div>
 
     <script>
+        let currentUsername = localStorage.getItem('syber_username') || 'Executive_User';
+
+        function updateProfileUI() {
+            document.getElementById("displayUsername").innerText = currentUsername;
+            document.getElementById("profileAvatar").src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(currentUsername)}`;
+        }
+        updateProfileUI();
+
+        function changeDisplayName() {
+            const newName = prompt("Enter your new account display name:", currentUsername);
+            if (newName && newName.trim()) {
+                currentUsername = newName.trim();
+                localStorage.setItem('syber_username', currentUsername);
+                updateProfileUI();
+            }
+        }
+
         const pathParts = window.location.pathname.split('/');
         const postId = parseInt(pathParts[pathParts.length - 1]);
 
@@ -61,10 +91,9 @@
         };
 
         function submitComment() {
-            const username = document.getElementById("commentUser").value.trim() || "Anonymous";
             const text = document.getElementById("commentText").value.trim();
             if (!text) return alert("Comment cannot be empty.");
-            socket.send(JSON.stringify({ type: "NEW_COMMENT", post_id: postId, username: username, text: text }));
+            socket.send(JSON.stringify({ type: "NEW_COMMENT", post_id: postId, username: currentUsername, text: text }));
             document.getElementById("commentText").value = "";
         }
 
@@ -82,10 +111,11 @@
                 commentsHTML = '<p style="font-size:0.85em; color:#94a3b8; margin:4px 0;">No comments yet.</p>';
             }
 
+            // Static UTC+8 timestamp displayed here
             document.getElementById("postCardContainer").innerHTML = `
                 <div class="post-header">
                     <span class="post-author">${post.username}</span>
-                    <span>${post.timestamp}</span>
+                    <span>🕒 ${post.timestamp}</span>
                 </div>
                 <div class="post-text">${post.text}</div>
                 
@@ -93,8 +123,7 @@
                     <b>Discussion (${post.comments.length}):</b>
                     <div id="commentsList">${commentsHTML}</div>
                     <div style="margin-top: 12px;">
-                        <input type="text" id="commentUser" placeholder="Your Name" value="Executive_User">
-                        <input type="text" id="commentText" placeholder="Write a response...">
+                        <textarea id="commentText" rows="2" placeholder="Write a response..."></textarea>
                         <button onclick="submitComment()">Post Reply</button>
                     </div>
                 </div>
