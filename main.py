@@ -1,9 +1,12 @@
-import datetime
+from datetime import datetime, timezone, timedelta
 from typing import List, Dict
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse, RedirectResponse
 
 app = FastAPI()
+
+# UTC+8 timezone definition for static timestamps
+UTC_8 = timezone(timedelta(hours=8))
 
 # In-memory database storing forum posts & threaded comments
 posts_db: List[Dict] = []
@@ -39,9 +42,8 @@ async def get_single_post(post_id: int):
     with open("post_detail.html", "r", encoding="utf-8") as f:
         html_content = f.read()
     
-    # Dynamically inject post-specific Open Graph tags so LinkedIn displays the content preview card
     post_url = f"https://syber-community.onrender.com/post/{post_id}"
-    safe_text = post['text'].replace('"', '&quot;')[:160] # Truncate for clean preview
+    safe_text = post['text'].replace('"', '&quot;')[:160]
     
     html_content = html_content.replace("<!--OG_TITLE_PLACEHOLDER-->", f"Post by {post['username']} | Syber Community")
     html_content = html_content.replace("<!--OG_DESC_PLACEHOLDER-->", safe_text)
@@ -61,9 +63,9 @@ async def websocket_endpoint(websocket: WebSocket):
             if action_type == "NEW_POST":
                 new_post = {
                     "id": len(posts_db) + 1,
-                    "username": data.get("username", "Anonymous"),
+                    "username": data.get("username", "Executive_User"),
                     "text": data.get("text", ""),
-                    "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    "timestamp": datetime.now(UTC_8).strftime("%Y-%m-%d %H:%M:%S UTC+8"),
                     "comments": []
                 }
                 posts_db.insert(0, new_post)
@@ -74,9 +76,9 @@ async def websocket_endpoint(websocket: WebSocket):
                 for post in posts_db:
                     if post["id"] == post_id:
                         post["comments"].append({
-                            "username": data.get("username", "Anonymous"),
+                            "username": data.get("username", "Executive_User"),
                             "text": data.get("text", ""),
-                            "timestamp": datetime.datetime.now().strftime("%H:%M:%S")
+                            "timestamp": datetime.now(UTC_8).strftime("%Y-%m-%d %H:%M:%S UTC+8")
                         })
                         break
                 await manager.broadcast({"type": "UPDATE_POSTS", "posts": posts_db})
