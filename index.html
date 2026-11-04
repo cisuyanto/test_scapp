@@ -96,16 +96,14 @@
         });
     }
 
-    function shareToLinkedIn(event, postId, postText) {
+    function shareToLinkedIn(event, postId) {
         event.stopPropagation();
         const cleanUrl = window.location.href.split('#')[0];
-        // Point share back to main feed anchored to this post for robust preview reliability
-        const targetUrl = `${cleanUrl}#post-${postId}`;
         
-        // Construct sharing text containing post details
-        const shareText = encodeURIComponent(`Check out this update on Syber Community:\n\n"${postText.substring(0, 120)}..."\n\n`);
-        const shareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(targetUrl)}&summary=${shareText}`;
+        // Target the specific post's independent page URL
+        const singlePostUrl = `${cleanUrl}post/${postId}`;
         
+        const shareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(singlePostUrl)}`;
         window.open(shareUrl, '_blank', 'width=600,height=600');
     }
 
